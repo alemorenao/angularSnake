@@ -1,31 +1,3 @@
-<h1>{{message}}</h1>
-<h4>{{ totalTreats }}</h4>
+<app-header [message]="message" [totalTreats]="totalTreats"></app-header>
 <br><br>
-<section class="board" (keydown)="direction($event)" contenteditable="true" autofocus>
-
-  @for (x of [0,1,2,3,4,5,6,7,8,9,10,11,12,13,14,15]; track $index) {
-    @for (item of board[x]; track $index) {
-      @switch (item) {
-        @case (0) {
-          <div class="ground"></div>
-        }
-        @case (1) {
-          <div class="wall"></div>
-        }
-       @case (2) {
-          <div class="treat"></div>
-        }
-        @case (3) {
-          <div class="head"></div>
-        }
-        @default {
-          <div class="body"></div>
-        }
-      }
-    }
-  <br>
-  }
-</section>
-@if (message == 'GAME OVER') {
-  <button type="button" (click)="newGame()">New Game</button>
-}
+<app-game (messages)="changeMessage($event)" (addTreats)="updateTotalTreats($event)"></app-game>
