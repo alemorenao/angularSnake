@@ -1,5 +1,6 @@
-import { Component, EventEmitter, Output } from '@angular/core';
+import { Component, EventEmitter, Output, inject } from '@angular/core';
 import { Snake } from '../../snake';
+import { boards } from '../../services/boards';
 
 @Component({
   selector: 'app-game',
@@ -9,26 +10,11 @@ import { Snake } from '../../snake';
   styleUrl: './game.component.css'
 })
 export class GameComponent {
-  board: number[][] = [
-    [1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1],
-    [1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1],
-    [1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1],
-    [1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1],
-    [1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1],
-    [1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1],
-    [1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1],
-    [1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1],
-    [1, 0, 0, 6, 5, 4, 3, 0, 0, 0, 0, 0, 0, 0, 0, 1],
-    [1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1],
-    [1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1],
-    [1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1],
-    [1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1],
-    [1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1],
-    [1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1],
-    [1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1],
-  ]
+  boardService = inject(boards)
+  level : number = +sessionStorage.getItem('level')!
+  board: number[][] = this.boardService.getBoard(this.level)
   gameInterval: any;
-  speed: number = 70;
+  speed: number = 120;
   snake: Snake[] = [];
   head!: Snake;
   moveX!: number;
@@ -45,12 +31,18 @@ export class GameComponent {
 
   constructor() {
 
+    if(sessionStorage.getItem('level') == null){
+      sessionStorage.setItem('level', '0')
+    }
+    
     this.findSnake()
 
     this.plantTreat();
 
   }
-
+  /********************************************************************************************************/
+  /******************************************FIND SNAKE****************************************************/
+  /********************************************************************************************************/
   findSnake() {
     for (let i = 0; i < 16; i++) {
       for (let j = 0; j < 16; j++) {
@@ -71,7 +63,9 @@ export class GameComponent {
 
 
   }
-
+  /********************************************************************************************************/
+  /*****************************************RANDOM TREAT***************************************************/
+  /********************************************************************************************************/
   plantTreat() {
     let x = Math.floor(Math.random() * 16);
     let y = Math.floor(Math.random() * 16);
@@ -81,7 +75,6 @@ export class GameComponent {
     } else
       this.plantTreat()
   }
-
   /********************************************************************************************************/
   /*****************************************KEY DETECTION**************************************************/
   /********************************************************************************************************/
@@ -159,11 +152,34 @@ export class GameComponent {
       }
     }
   }
-
   /********************************************************************************************************/
   /**************************************CONDITIONS TO MOVE************************************************/
   /********************************************************************************************************/
   coditionToMove(): boolean {
+    //If there are no walls
+
+    //If right-end of board and going right
+    if(this.head?.posY! == 15 && this.moveY == 1){
+      this.moveY = -15
+    }
+
+    //If left-end of board and going left
+    if(this.head?.posY! == 0 && this.moveY == -1){
+      this.moveY = 15
+    }
+    
+
+    //If lower-end of board and going down
+    if(this.head?.posX! == 15 && this.moveX == 1){
+      this.moveX = -15
+    }
+
+    //If upper-end of board and going up
+    if(this.head?.posX! == 0 && this.moveX == -1){
+      this.moveX = 15
+    }
+    
+    
     if (this.board[this.head?.posX! + this.moveX][this.head?.posY! + this.moveY] == 1 || this.board[this.head?.posX! + this.moveX][this.head?.posY! + this.moveY] > 3) {
       this.message = "GAME OVER"
       this.messages.emit(this.message)
@@ -176,6 +192,12 @@ export class GameComponent {
         this.treatsInBelly++;
         this.countDown = this.snake.length + 1;
         this.totalTreats++;
+        if (this.totalTreats == 5) {
+          this.message = "NEW LEVEL"
+          this.level++;
+          sessionStorage.setItem('level',this.level.toString())
+          this.newGame()
+        }
         this.addTreats.emit(this.totalTreats)
         this.plantTreat();
       }
@@ -217,9 +239,16 @@ export class GameComponent {
       this.board[this.snake[index].posX][this.snake[index].posY] = index + 3;
     }
   }
-
-
+  /********************************************************************************************************/
+  /*******************************************NEW GAME*****************************************************/
+  /********************************************************************************************************/
   newGame() {
     location.reload()
+  }
+  /********************************************************************************************************/
+  /*******************************************NEW LEVEL****************************************************/
+  /********************************************************************************************************/
+  nextLevel() {
+    this.board = this.boardService.getBoard(this.level)
   }
 }
